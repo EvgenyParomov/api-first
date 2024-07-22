@@ -1,0 +1,145 @@
+openapi: 3.0.3
+info:
+  title: Todo list api
+  version: 0.0.1
+servers:
+- url: http://localhost:3000
+tags:
+- name: todos
+paths:
+  /todos:
+    get:
+      operationId: getTodosList
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Todo'
+                type: array
+          description: Todo list
+      tags:
+      - todos
+    post:
+      operationId: createTodoItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Todo'
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+          description: Todo item
+      tags:
+      - todos
+  /todos/{todoId}:
+    delete:
+      operationId: deleteTodoItem
+      parameters:
+      - explode: false
+        in: path
+        name: todoId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: Delete success
+      tags:
+      - todos
+    patch:
+      operationId: updateTodoItem
+      parameters:
+      - explode: false
+        in: path
+        name: todoId
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoPatch'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+          description: Todo item
+      tags:
+      - todos
+components:
+  parameters:
+    TodoId:
+      explode: false
+      in: path
+      name: todoId
+      required: true
+      schema:
+        type: string
+      style: simple
+  responses:
+    TodoListResponse:
+      content:
+        application/json:
+          schema:
+            items:
+              $ref: '#/components/schemas/Todo'
+            type: array
+      description: Todo list
+    TodoResponse:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Todo'
+      description: Todo item
+  schemas:
+    TodoPatch:
+      example:
+        text: text
+        completed: true
+      properties:
+        text:
+          title: text
+          type: string
+        completed:
+          title: completed
+          type: boolean
+      title: TodoPatch
+      type: object
+    Todo:
+      example:
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        id: id
+        text: text
+        completed: true
+      properties:
+        id:
+          title: id
+          type: string
+        text:
+          title: text
+          type: string
+        completed:
+          title: completed
+          type: boolean
+        createdAt:
+          format: date-time
+          title: createdAt
+          type: string
+      required:
+      - completed
+      - createdAt
+      - id
+      - text
+      title: Todo
+      type: object
