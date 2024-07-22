@@ -1,0 +1,104 @@
+openapi: 3.0.3
+info:
+  title: Todo list api
+  version: 0.0.1
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: todos
+
+paths:
+  /todos:
+    get:
+      operationId: getTodosList
+      tags:
+        - todos
+      responses:
+        200:
+          $ref: "#/components/responses/TodoListResponse"
+    post:
+      operationId: createTodoItem
+      tags:
+        - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Todo"
+      responses:
+        201:
+          $ref: "#/components/responses/TodoResponse"
+
+  /todos/{todoId}:
+    patch:
+      operationId: updateTodoItem
+      tags:
+        - todos
+      parameters:
+        - $ref: "#/components/parameters/TodoId"
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TodoPatch"
+      responses:
+        200:
+          $ref: "#/components/responses/TodoResponse"
+    delete:
+      operationId: deleteTodoItem
+      tags:
+        - todos
+      parameters:
+        - $ref: "#/components/parameters/TodoId"
+      responses:
+        204:
+          description: Delete success
+components:
+  responses:
+    TodoListResponse:
+      description: Todo list
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/Todo"
+    TodoResponse:
+      description: Todo item
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Todo"
+  parameters:
+    TodoId:
+      in: path
+      name: todoId
+      required: true
+      schema:
+        type: string
+  schemas:
+    TodoPatch:
+      type: object
+      properties:
+        text:
+          type: string
+        completed:
+          type: boolean
+    Todo:
+      type: object
+      required:
+        - id
+        - text
+        - completed
+        - createdAt
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        completed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
