@@ -1,4 +1,4 @@
-const baseURL = "http://localhost:3000"; // use your own URL here or environment variable
+const baseURL = "/api"; // use your own URL here or environment variable
 
 export const apiInstance = async <T>({
   url,

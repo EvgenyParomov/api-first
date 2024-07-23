@@ -1,35 +1,123 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from "react";
+import "./App.css";
+import { apiModel, todosApi } from "./shared/api/generated";
+import { nanoid } from "nanoid";
+import { useQueryClient } from "@tanstack/react-query";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const queryClient = useQueryClient();
+  const { data: todos } = todosApi.useGetTodosListSuspense();
+
+  const createTodoMutaion = todosApi.useCreateTodoItem({
+    mutation: {
+      onSettled: async () => {
+        await queryClient.invalidateQueries(
+          todosApi.getGetTodosListQueryOptions()
+        );
+      },
+    },
+  });
+
+  const deleteTodoMutaion = todosApi.useDeleteTodoItem({
+    mutation: {
+      onSettled: async () => {
+        await queryClient.invalidateQueries(
+          todosApi.getGetTodosListQueryOptions()
+        );
+      },
+      onMutate: async ({ todoId }) => {
+        await queryClient.cancelQueries(todosApi.getGetTodosListQueryOptions());
+        const previousTodos = queryClient.getQueryData<apiModel.Todo[]>(
+          todosApi.getGetTodosListQueryKey()
+        );
+        if (previousTodos) {
+          queryClient.setQueryData<apiModel.Todo[]>(
+            todosApi.getGetTodosListQueryKey(),
+            previousTodos.filter((todo) => todo.id !== todoId)
+          );
+        }
+        return { previousTodos };
+      },
+    },
+  });
+
+  const updateTodoMutaion = todosApi.useUpdateTodoItem({
+    mutation: {
+      onSettled: async () => {
+        await queryClient.invalidateQueries(
+          todosApi.getGetTodosListQueryOptions()
+        );
+      },
+      onMutate: async ({ data, todoId }) => {
+        await queryClient.cancelQueries(todosApi.getGetTodosListQueryOptions());
+        const previousTodos = queryClient.getQueryData<apiModel.Todo[]>(
+          todosApi.getGetTodosListQueryKey()
+        );
+        if (previousTodos) {
+          queryClient.setQueryData<apiModel.Todo[]>(
+            todosApi.getGetTodosListQueryKey(),
+            previousTodos.map((todo) =>
+              todo.id === todoId ? { ...todo, ...data } : todo
+            )
+          );
+        }
+        return { previousTodos };
+      },
+    },
+  });
+
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
+    e.preventDefault();
+    if (e.target instanceof HTMLFormElement) {
+      const formData = new FormData(e.target as HTMLFormElement);
+
+      const text = formData.get("text");
+
+      createTodoMutaion.mutate({
+        data: {
+          id: nanoid(),
+          completed: false,
+          text: text as string,
+          createdAt: new Date().toISOString(),
+        },
+      });
+
+      e.target.reset();
+    }
+  };
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+      <form onSubmit={handleSubmit}>
+        <input name="text" type="text" />
+        <button type="submit" disabled={createTodoMutaion.isPending}>
+          Submit
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+      </form>
+      <div>
+        {todos?.map((todo) => (
+          <div key={todo.id}>
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() =>
+                updateTodoMutaion.mutate({
+                  data: { completed: !todo.completed },
+                  todoId: todo.id,
+                })
+              }
+            />
+            {todo.text}
+            <button
+              onClick={() => deleteTodoMutaion.mutate({ todoId: todo.id })}
+            >
+              Delete
+            </button>
+          </div>
+        ))}
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
